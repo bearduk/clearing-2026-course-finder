@@ -201,7 +201,7 @@ const sampleCourses = [
 
 const courses = window.CLEARING_COURSES || sampleCourses;
 
-const state = { query: "", type: "all", availability: "available", letter: "all", view: "cards", limit: 24 };
+const state = { query: "", type: "all", availability: "vacancies", letter: "all", view: "cards", limit: 24 };
 const courseSearch = new Fuse(courses, {
   keys: [
     { name: "title", weight: 0.75 },
@@ -252,28 +252,39 @@ function courseCard(course) {
     </article>`;
 }
 
-function filteredCourses() {
+const availabilityOptions = {
+  vacancies: { label: "Vacancies", statuses: ["Vacancies"] },
+  limited: { label: "Limited vacancies", statuses: ["Limited vacancies"] },
+  waiting: { label: "Waiting list", statuses: ["Waiting list"] },
+  full: { label: "Full", statuses: ["Full"] },
+  all: { label: "All statuses", statuses: ["Vacancies", "Limited vacancies", "Waiting list", "Full"] }
+};
+
+function matchingCourses() {
   const query = state.query.trim();
   const searchResults = query ? courseSearch.search(query).map(result => result.item) : courses;
 
   return searchResults.filter(course => {
     const matchesType = state.type === "all" || course.type === state.type;
-    const availabilityMatches = {
-      available: ["Vacancies", "Limited vacancies"],
-      vacancies: ["Vacancies"],
-      limited: ["Limited vacancies"],
-      waiting: ["Waiting list"],
-      full: ["Full"],
-      all: ["Vacancies", "Limited vacancies", "Waiting list", "Full"]
-    };
-    const matchesAvailability = availabilityMatches[state.availability].includes(course.status);
     const matchesLetter = state.letter === "all" || course.title.startsWith(state.letter);
-    return matchesType && matchesAvailability && matchesLetter;
+    return matchesType && matchesLetter;
+  });
+}
+
+function updateAvailabilityCounts(candidates) {
+  const select = document.querySelector("#availability-select");
+  Object.entries(availabilityOptions).forEach(([value, option]) => {
+    const count = value === "all"
+      ? candidates.length
+      : candidates.filter(course => option.statuses.includes(course.status)).length;
+    select.querySelector(`option[value="${value}"]`).textContent = `${option.label} (${count})`;
   });
 }
 
 function render() {
-  const visible = filteredCourses();
+  const candidates = matchingCourses();
+  const visible = candidates.filter(course => availabilityOptions[state.availability].statuses.includes(course.status));
+  updateAvailabilityCounts(candidates);
   const rendered = visible.slice(0, state.limit);
   results.innerHTML = rendered.map(courseCard).join("");
   results.classList.toggle("table-view", state.view === "table");
@@ -359,11 +370,11 @@ document.querySelectorAll(".view-toggle button").forEach(button => {
 document.querySelector("#reset-filters").addEventListener("click", () => {
   state.query = "";
   state.type = "all";
-  state.availability = "available";
+  state.availability = "vacancies";
   state.letter = "all";
   search.value = "";
   document.querySelector("#type-all").checked = true;
-  document.querySelector("#availability-select").value = "available";
+  document.querySelector("#availability-select").value = "vacancies";
   document.querySelectorAll(".letter-button").forEach(button => {
     const active = button.dataset.letter === "all";
     button.classList.toggle("active", active);
