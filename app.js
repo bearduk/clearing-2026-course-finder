@@ -232,11 +232,13 @@ function courseCard(course) {
         <span>Typical entry requirements</span>
         <strong>${course.requirements}</strong>
       </div>
-      <details class="details">
-        <summary>More about entry requirements</summary>
-        <p>${course.info}</p>
-      </details>
-      <a class="course-link" href="${course.url}">View full course details <span aria-hidden="true">→</span></a>
+      <div class="card-actions">
+        <details class="details">
+          <summary>More about entry requirements</summary>
+          <p>${course.info}</p>
+        </details>
+        <a class="course-link" href="${course.url}">Full course details <span aria-hidden="true">→</span></a>
+      </div>
     </article>`;
 }
 
