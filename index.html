@@ -82,12 +82,14 @@
 
         <fieldset class="course-type availability-filter">
           <legend>Availability</legend>
-          <div class="segmented availability-options">
-            <input type="radio" name="availability" id="availability-open" value="available" checked>
-            <label for="availability-open">With vacancies</label>
-            <input type="radio" name="availability" id="availability-all" value="all">
-            <label for="availability-all">All statuses</label>
-          </div>
+          <select id="availability-select" name="availability">
+            <option value="available" selected>With vacancies</option>
+            <option value="vacancies">Vacancies</option>
+            <option value="limited">Limited vacancies</option>
+            <option value="waiting">Waiting list</option>
+            <option value="full">Full</option>
+            <option value="all">All statuses</option>
+          </select>
         </fieldset>
       </div>
 

@@ -255,7 +255,15 @@ function filteredCourses() {
 
   return searchResults.filter(course => {
     const matchesType = state.type === "all" || course.type === state.type;
-    const matchesAvailability = state.availability === "all" || ["Vacancies", "Limited vacancies"].includes(course.status);
+    const availabilityMatches = {
+      available: ["Vacancies", "Limited vacancies"],
+      vacancies: ["Vacancies"],
+      limited: ["Limited vacancies"],
+      waiting: ["Waiting list"],
+      full: ["Full"],
+      all: ["Vacancies", "Limited vacancies", "Waiting list", "Full"]
+    };
+    const matchesAvailability = availabilityMatches[state.availability].includes(course.status);
     const matchesLetter = state.letter === "all" || course.title.startsWith(state.letter);
     return matchesType && matchesAvailability && matchesLetter;
   });
@@ -312,12 +320,10 @@ document.querySelectorAll('input[name="type"]').forEach(input => {
   });
 });
 
-document.querySelectorAll('input[name="availability"]').forEach(input => {
-  input.addEventListener("change", event => {
-    state.availability = event.target.value;
-    state.limit = 24;
-    render();
-  });
+document.querySelector("#availability-select").addEventListener("change", event => {
+  state.availability = event.target.value;
+  state.limit = 24;
+  render();
 });
 
 document.querySelector("#az-buttons").addEventListener("click", event => {
@@ -353,7 +359,7 @@ document.querySelector("#reset-filters").addEventListener("click", () => {
   state.letter = "all";
   search.value = "";
   document.querySelector("#type-all").checked = true;
-  document.querySelector("#availability-open").checked = true;
+  document.querySelector("#availability-select").value = "available";
   document.querySelectorAll(".letter-button").forEach(button => {
     const active = button.dataset.letter === "all";
     button.classList.toggle("active", active);

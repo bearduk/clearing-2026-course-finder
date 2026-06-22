@@ -63,7 +63,8 @@ input[type="search"]:focus { outline: 3px solid rgba(0,125,128,.22); border-colo
 .segmented label:last-child { border-right: 1px solid #aaa5b0; }
 .segmented input:checked + label { border-color: var(--teal); color: #fff; background: var(--teal); }
 .segmented input:focus-visible + label { outline: 3px solid rgba(0,125,128,.3); outline-offset: 2px; }
-.availability-options { grid-template-columns: 1fr 1fr; }
+.availability-filter select { width: 100%; min-height: 52px; padding: 0 42px 0 14px; border: 1px solid #aaa5b0; border-radius: 0; color: var(--ink); background: #fff; }
+.availability-filter select:focus { outline: 3px solid rgba(0,125,128,.22); border-color: var(--teal); }
 
 .az-nav { margin-top: 24px; padding-bottom: 22px; display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--line); }
 .az-nav > span { color: var(--muted); font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
