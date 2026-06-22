@@ -1,2 +1,7 @@
 __pycache__/
-build/clearing-data/
+outputs/
+inputs/*
+!inputs/README.md
+build/clearing-data/*
+!build/clearing-data/current/
+!build/clearing-data/current/**

@@ -190,11 +190,17 @@ def extract_courses(source):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("source", type=Path)
-    parser.add_argument("--output", type=Path, default=Path("courses.js"))
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=Path("archive/legacy-word-import/courses.js"),
+        help="Legacy output path; the controlled Excel workbook is now the master source",
+    )
     args = parser.parse_args()
 
     courses = extract_courses(args.source)
     payload = json.dumps(courses, ensure_ascii=False, indent=2)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         "// Generated from the approved Clearing 2026 Word document.\n"
         f"window.CLEARING_COURSES = Object.freeze({payload});\n",

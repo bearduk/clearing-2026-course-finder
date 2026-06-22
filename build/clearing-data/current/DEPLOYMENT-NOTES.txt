@@ -1,0 +1,6 @@
+CLEARING DATA BUILD
+
+TerminalFour/server data: courses.json (or courses.js for the current prototype).
+Emergency static site: upload the complete contents of static-backup/.
+Review validation-report.txt and manifest.json before uploading anything.
+Do not edit generated files directly; update the controlled workbook and rebuild.

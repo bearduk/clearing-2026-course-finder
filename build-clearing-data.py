@@ -571,6 +571,14 @@ def update_backup_html(source: str, generated_at: datetime, record_count: int) -
     )
     if count != 1:
         raise BuildError("Could not update the page-last-modified text in index.html")
+    updated, script_count = re.subn(
+        r'<script src="build/clearing-data/current/courses\.js"></script>',
+        '<script src="courses.js"></script>',
+        updated,
+        count=1,
+    )
+    if script_count != 1:
+        raise BuildError("Could not rewrite the generated course-data path for the static backup")
     marker = f"<!-- Generated backup: {html.escape(generated_at.isoformat(timespec='seconds'))}; {record_count} records -->"
     return updated.replace("<!doctype html>", f"<!doctype html>\n{marker}", 1)
 
@@ -689,7 +697,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Validate the Clearing course workbook and create upload-ready data and static HTML backup files."
     )
-    parser.add_argument("workbook", type=Path, help="Exported .xlsx workbook to validate")
+    parser.add_argument(
+        "workbook",
+        type=Path,
+        nargs="?",
+        default=Path("inputs/Clearing-2026-Course-Data-Master.xlsx"),
+        help="Exported .xlsx workbook (default: inputs/Clearing-2026-Course-Data-Master.xlsx)",
+    )
     parser.add_argument(
         "--output-dir",
         type=Path,

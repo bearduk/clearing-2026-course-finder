@@ -1,0 +1,12 @@
+Clearing data validation: PASS
+Generated: 2026-06-22T20:06:39+01:00
+Source: Clearing-2026-Course-Data-Master.xlsx
+Source rows: 372
+Published records: 372
+Suppressed records: 0
+Errors: 0
+Warnings: 1
+
+Issues
+------
+WARNING: row 29, Course URL: Also used on row 27; confirm this is intentional

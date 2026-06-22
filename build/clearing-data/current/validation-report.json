@@ -1,0 +1,30 @@
+{
+  "valid": true,
+  "generatedAt": "2026-06-22T20:06:39+01:00",
+  "source": "Clearing-2026-Course-Data-Master.xlsx",
+  "sourceRows": 372,
+  "publishedRecords": 372,
+  "suppressedRecords": 0,
+  "errorCount": 0,
+  "warningCount": 1,
+  "counts": {
+    "availability": {
+      "Full": 8,
+      "Limited vacancies": 4,
+      "Vacancies": 353,
+      "Waiting list": 7
+    },
+    "courseType": {
+      "Foundation year": 184,
+      "Undergraduate": 188
+    }
+  },
+  "issues": [
+    {
+      "severity": "warning",
+      "row": 29,
+      "column": "Course URL",
+      "message": "Also used on row 27; confirm this is intentional"
+    }
+  ]
+}

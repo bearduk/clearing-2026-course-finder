@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-06-22T20:06:39+01:00",
+  "sourceFile": "Clearing-2026-Course-Data-Master.xlsx",
+  "sourceSha256": "0762d6b2904bc8d5e193c936f2bbcbde248d465717d5a5230095e6d802fe434a",
+  "publishedRecords": 372,
+  "suppressedRecords": 0,
+  "counts": {
+    "availability": {
+      "Full": 8,
+      "Limited vacancies": 4,
+      "Vacancies": 353,
+      "Waiting list": 7
+    },
+    "courseType": {
+      "Foundation year": 184,
+      "Undergraduate": 188
+    }
+  },
+  "files": {
+    "DEPLOYMENT-NOTES.txt": "d62675d5bc5eaed5562b25ba37f4ffed30d5f309d1a90631572d07d22af2afc6",
+    "courses.csv": "19311d901a10eeab9111875557d5258a934253ea6f9b0a661ee79d48786e04fe",
+    "courses.js": "3ee05e08b5bb2b578a2014fc9cd919fe8bb40bc477acb4ae9c1fd1d23ef1b94a",
+    "courses.json": "7fc73dec70130ab50f9a4afcf1bdb3bc2c2e88acb01d3dc5cda0ef337d29e70e",
+    "static-backup/app.js": "75cb2ffe645697a99ce8b336515a22575d1e0c893395716eb5782421e9a35a3d",
+    "static-backup/courses.js": "3ee05e08b5bb2b578a2014fc9cd919fe8bb40bc477acb4ae9c1fd1d23ef1b94a",
+    "static-backup/courses.json": "7fc73dec70130ab50f9a4afcf1bdb3bc2c2e88acb01d3dc5cda0ef337d29e70e",
+    "static-backup/fuse.min.js": "220934f576134b0466d99f786ce21b13f87d319b1e9ae633c55e68f6f41c3c9d",
+    "static-backup/index.html": "009dc5a64af60043f238ff4b0ee1c90cebf918b5cffba57eea6eb2e65926b577",
+    "static-backup/robots.txt": "331ea9090db0c9f6f597bd9840fd5b171830f6e0b3ba1cb24dfa91f0c95aedc1",
+    "static-backup/styles.css": "31497a609dc4e854ce2197755c2585685db2aa8e87a6ade0bd767d5ac3941aa0",
+    "validation-report.json": "239a8d5bd9b5b9f711b72a8385f8a943b6f8268dba639339595b8170e957a791",
+    "validation-report.txt": "1b7ab4a388577c3543d90dee8db1dae3fb85e91080e486d0a770375c13dbc409"
+  }
+}
