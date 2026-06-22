@@ -104,6 +104,8 @@ input[type="search"]:focus { outline: 3px solid rgba(0,125,128,.22); border-colo
 .details { min-width: 210px; flex: 1 1 210px; }
 .details summary { color: var(--teal-dark); font-size: .87rem; font-weight: 700; cursor: pointer; }
 .details p { margin: 10px 0 0; color: var(--muted); font-size: .87rem; }
+.details-link { display: inline-block; margin-top: 8px; color: var(--teal-dark); font-size: .87rem; font-weight: 700; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.details-link:hover { color: var(--purple); }
 .details-table-label { display: none; }
 .course-link { flex: 0 0 auto; color: var(--teal-dark); font-size: .9rem; font-weight: 700; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .course-link:hover { color: var(--purple); }

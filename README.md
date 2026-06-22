@@ -30,6 +30,7 @@ Create one parent content item containing a repeatable `Courses` group. Suggeste
 | Short description | Plain text or 1-line HTML | Yes | Explore life from molecules... |
 | Entry requirements summary | Plain text | Yes | BBC / 112 UCAS tariff points |
 | Entry requirements info | HTML | No | A science subject is normally required... |
+| Entry requirements URL | Link or plain text | No | https://www.keele.ac.uk/clearing/entry-requirements/ |
 | Full course URL | Link or plain text | Yes | https://www.keele.ac.uk/.../biology/ |
 | Availability | Select list | Yes | Vacancies / Limited vacancies / Waiting list / Full |
 | Display order | Number | No | 10 |

@@ -200,6 +200,7 @@ const sampleCourses = [
 ];
 
 const courses = window.CLEARING_COURSES || sampleCourses;
+const clearingEntryRequirementsUrl = "https://www.keele.ac.uk/clearing/entry-requirements/";
 
 const state = { query: "", type: "all", availability: "vacancies", letter: "all", view: "cards", limit: 24 };
 const courseSearch = new Fuse(courses, {
@@ -224,6 +225,12 @@ const availableLetters = new Set(courses.map(course => course.title[0].toUpperCa
 
 function courseCard(course) {
   const statusClass = course.status.toLowerCase().replaceAll(" ", "-");
+  const offer = course.requirements === "See entry requirements"
+    ? "<strong>Course-specific</strong>"
+    : `<strong>${course.requirements}</strong>`;
+  const requirementsLink = course.requirements === "See entry requirements"
+    ? `<a class="details-link" href="${clearingEntryRequirementsUrl}">View Clearing entry requirements <span aria-hidden="true">→</span></a>`
+    : "";
   return `
     <article class="course-card" data-type="${course.type}" data-status="${course.status}">
       <div class="card-topline">
@@ -237,7 +244,7 @@ function courseCard(course) {
       <p class="summary">${course.summary}</p>
       <div class="requirements">
         <span>Typical offer</span>
-        <strong>${course.requirements}</strong>
+        ${offer}
       </div>
       <div class="card-actions">
         <details class="details">
@@ -246,6 +253,7 @@ function courseCard(course) {
             <span class="details-table-label">Entry requirement details</span>
           </summary>
           <p>${course.info}</p>
+          ${requirementsLink}
         </details>
         <a class="course-link" href="${course.url}">Full course details <span aria-hidden="true">→</span></a>
       </div>
