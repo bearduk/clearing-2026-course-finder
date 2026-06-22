@@ -1,4 +1,4 @@
-const courses = [
+const sampleCourses = [
   {
     title: "Accounting and Finance",
     type: "Foundation year",
@@ -199,15 +199,18 @@ const courses = [
   }
 ];
 
-const state = { query: "", type: "all", letter: "all", view: "cards" };
+const courses = window.CLEARING_COURSES || sampleCourses;
+
+const state = { query: "", type: "all", availability: "available", letter: "all", view: "cards", limit: 24 };
 const courseSearch = new Fuse(courses, {
   keys: [
-    { name: "title", weight: 0.65 },
-    { name: "summary", weight: 0.2 },
-    { name: "info", weight: 0.1 },
-    { name: "requirements", weight: 0.05 }
+    { name: "title", weight: 0.75 },
+    { name: "summary", weight: 0.05 },
+    { name: "info", weight: 0.05 },
+    { name: "requirements", weight: 0.1 },
+    { name: "ucas", weight: 0.05 }
   ],
-  threshold: 0.36,
+  threshold: 0.3,
   distance: 120,
   ignoreLocation: true,
   minMatchCharLength: 2
@@ -220,16 +223,20 @@ const clearSearch = document.querySelector(".clear-search");
 const availableLetters = new Set(courses.map(course => course.title[0].toUpperCase()));
 
 function courseCard(course) {
+  const statusClass = course.status.toLowerCase().replaceAll(" ", "-");
   return `
-    <article class="course-card" data-type="${course.type}">
+    <article class="course-card" data-type="${course.type}" data-status="${course.status}">
       <div class="card-topline">
-        <span class="tag">${course.type}</span>
-        <span class="ucas">UCAS: ${course.ucas}</span>
+        <div class="card-tags">
+          <span class="tag">${course.type}</span>
+          <span class="status status--${statusClass}">${course.status}</span>
+        </div>
+        ${course.ucas ? `<span class="ucas">UCAS: ${course.ucas}</span>` : ""}
       </div>
       <h3>${course.title}</h3>
       <p class="summary">${course.summary}</p>
       <div class="requirements">
-        <span>Typical entry requirements</span>
+        <span>Typical offer</span>
         <strong>${course.requirements}</strong>
       </div>
       <div class="card-actions">
@@ -248,19 +255,24 @@ function filteredCourses() {
 
   return searchResults.filter(course => {
     const matchesType = state.type === "all" || course.type === state.type;
+    const matchesAvailability = state.availability === "all" || ["Vacancies", "Limited vacancies"].includes(course.status);
     const matchesLetter = state.letter === "all" || course.title.startsWith(state.letter);
-    return matchesType && matchesLetter;
+    return matchesType && matchesAvailability && matchesLetter;
   });
 }
 
 function render() {
   const visible = filteredCourses();
-  results.innerHTML = visible.map(courseCard).join("");
+  const rendered = visible.slice(0, state.limit);
+  results.innerHTML = rendered.map(courseCard).join("");
   results.classList.toggle("table-view", state.view === "table");
   results.hidden = visible.length === 0;
   noResults.hidden = visible.length !== 0;
   count.innerHTML = `<strong>${visible.length}</strong> course${visible.length === 1 ? "" : "s"} found`;
   clearSearch.hidden = !state.query;
+  const loadMore = document.querySelector("#load-more");
+  loadMore.hidden = rendered.length >= visible.length;
+  loadMore.textContent = `Show more courses (${visible.length - rendered.length} remaining)`;
 }
 
 function buildAZ() {
@@ -276,6 +288,7 @@ function buildAZ() {
 search.addEventListener("input", event => {
   state.query = event.target.value;
   state.letter = "all";
+  state.limit = 24;
   document.querySelectorAll(".letter-button").forEach(button => {
     const active = button.dataset.letter === "all";
     button.classList.toggle("active", active);
@@ -294,6 +307,15 @@ clearSearch.addEventListener("click", () => {
 document.querySelectorAll('input[name="type"]').forEach(input => {
   input.addEventListener("change", event => {
     state.type = event.target.value;
+    state.limit = 24;
+    render();
+  });
+});
+
+document.querySelectorAll('input[name="availability"]').forEach(input => {
+  input.addEventListener("change", event => {
+    state.availability = event.target.value;
+    state.limit = 24;
     render();
   });
 });
@@ -302,6 +324,7 @@ document.querySelector("#az-buttons").addEventListener("click", event => {
   const button = event.target.closest("button");
   if (!button) return;
   state.letter = button.dataset.letter;
+  state.limit = 24;
   document.querySelectorAll(".letter-button").forEach(item => {
     const active = item === button;
     item.classList.toggle("active", active);
@@ -326,9 +349,11 @@ document.querySelectorAll(".view-toggle button").forEach(button => {
 document.querySelector("#reset-filters").addEventListener("click", () => {
   state.query = "";
   state.type = "all";
+  state.availability = "available";
   state.letter = "all";
   search.value = "";
   document.querySelector("#type-all").checked = true;
+  document.querySelector("#availability-open").checked = true;
   document.querySelectorAll(".letter-button").forEach(button => {
     const active = button.dataset.letter === "all";
     button.classList.toggle("active", active);
@@ -336,6 +361,11 @@ document.querySelector("#reset-filters").addEventListener("click", () => {
   });
   render();
   search.focus();
+});
+
+document.querySelector("#load-more").addEventListener("click", () => {
+  state.limit += 24;
+  render();
 });
 
 buildAZ();

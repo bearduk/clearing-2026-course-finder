@@ -33,10 +33,10 @@
         <div>
           <p class="eyebrow">Clearing 2026</p>
           <h1>Find your place at Keele</h1>
-          <p class="hero-copy">Explore undergraduate and foundation year courses available through Clearing. Search by course name or browse the list from A to Z.</p>
+          <p class="hero-copy">Explore undergraduate and foundation year courses through Clearing. Search by course name or browse one combined list from A to Z.</p>
           <p class="hero-modified">
             <span>Prototype for review. Please send feedback to Chris Beard.</span>
-            <span>Page last modified: <time datetime="2026-06-21">21 June 2026</time></span>
+            <span>Page last modified: <time datetime="2026-06-22">22 June 2026</time></span>
           </p>
         </div>
         <aside class="hero-note" aria-label="Clearing support">
@@ -53,9 +53,9 @@
       <div class="finder-heading">
         <div>
           <p class="eyebrow dark">Course finder</p>
-          <h2 id="finder-title">Courses open in Clearing</h2>
+          <h2 id="finder-title">Clearing courses and availability</h2>
         </div>
-        <p class="demo-warning"><strong>Demo data:</strong> Course availability and entry requirements below are illustrative.</p>
+        <p class="demo-warning"><strong>Prototype:</strong> Course data is based on the supplied Clearing 2026 working document and remains subject to approval.</p>
       </div>
 
       <div class="controls" role="search">
@@ -79,6 +79,16 @@
             <label for="type-fy">Foundation year</label>
           </div>
         </fieldset>
+
+        <fieldset class="course-type availability-filter">
+          <legend>Availability</legend>
+          <div class="segmented availability-options">
+            <input type="radio" name="availability" id="availability-open" value="available" checked>
+            <label for="availability-open">With vacancies</label>
+            <input type="radio" name="availability" id="availability-all" value="all">
+            <label for="availability-all">All statuses</label>
+          </div>
+        </fieldset>
       </div>
 
       <nav class="az-nav" aria-label="Filter courses by first letter">
@@ -99,6 +109,7 @@
       </div>
 
       <div id="course-results" class="course-results" tabindex="-1"></div>
+      <button type="button" class="button secondary load-more" id="load-more" hidden>Show more courses</button>
       <div id="no-results" class="no-results" hidden>
         <span aria-hidden="true">?</span>
         <h3>No courses found</h3>
@@ -128,6 +139,7 @@
     </div>
   </footer>
 
+  <script src="courses.js"></script>
   <script src="fuse.min.js"></script>
   <script src="app.js"></script>
 </body>
