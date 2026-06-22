@@ -241,7 +241,10 @@ function courseCard(course) {
       </div>
       <div class="card-actions">
         <details class="details">
-          <summary>More about entry requirements</summary>
+          <summary>
+            <span class="details-card-label">More about entry requirements</span>
+            <span class="details-table-label">Entry requirement details</span>
+          </summary>
           <p>${course.info}</p>
         </details>
         <a class="course-link" href="${course.url}">Full course details <span aria-hidden="true">→</span></a>
@@ -279,6 +282,7 @@ function render() {
   count.innerHTML = `<strong>${visible.length}</strong> course${visible.length === 1 ? "" : "s"} found`;
   clearSearch.hidden = !state.query;
   const loadMore = document.querySelector("#load-more");
+  document.querySelector("#table-columns").hidden = state.view !== "table" || visible.length === 0;
   loadMore.hidden = rendered.length >= visible.length;
   loadMore.textContent = `Show more courses (${visible.length - rendered.length} remaining)`;
 }

@@ -104,18 +104,29 @@ input[type="search"]:focus { outline: 3px solid rgba(0,125,128,.22); border-colo
 .details { min-width: 210px; flex: 1 1 210px; }
 .details summary { color: var(--teal-dark); font-size: .87rem; font-weight: 700; cursor: pointer; }
 .details p { margin: 10px 0 0; color: var(--muted); font-size: .87rem; }
+.details-table-label { display: none; }
 .course-link { flex: 0 0 auto; color: var(--teal-dark); font-size: .9rem; font-weight: 700; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .course-link:hover { color: var(--purple); }
 
 .course-results.table-view { display: block; border-top: 1px solid var(--line); }
-.table-view .course-card { min-height: 0; padding: 19px 18px; display: grid; grid-template-columns: minmax(240px, 1.5fr) minmax(200px, .9fr) auto; align-items: center; gap: 20px; border: 0; border-bottom: 1px solid var(--line); box-shadow: none; }
+.table-columns { padding: 11px 18px; display: grid; grid-template-columns: minmax(240px, 1.5fr) minmax(200px, .9fr) auto; gap: 20px; color: var(--muted); background: var(--cream); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.table-columns[hidden] { display: none; }
+.table-columns span:last-child { text-align: right; }
+.table-view .course-card { min-height: 0; padding: 18px; display: grid; grid-template-columns: minmax(240px, 1.5fr) minmax(200px, .9fr) auto; align-items: center; gap: 8px 20px; border: 0; border-bottom: 1px solid var(--line); box-shadow: none; }
 .table-view .course-card:hover { transform: none; background: var(--cream); }
 .table-view .card-topline { justify-content: flex-start; }
 .table-view .course-card h3 { grid-column: 1; margin: 8px 0 0; }
-.table-view .summary, .table-view .details { display: none; }
+.table-view .summary { display: none; }
 .table-view .requirements { grid-column: 2; grid-row: 1 / span 2; margin: 0; padding: 0; border: 0; }
-.table-view .card-actions { grid-column: 3; grid-row: 1 / span 2; margin: 0; }
-.table-view .course-link { margin: 0; white-space: nowrap; }
+.table-view .requirements span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.table-view .requirements strong { text-align: left; }
+.table-view .card-actions { display: contents; }
+.table-view .course-link { grid-column: 3; grid-row: 1 / span 2; margin: 0; white-space: nowrap; justify-self: end; }
+.table-view .details { grid-column: 1 / -1; grid-row: 3; min-width: 0; margin-top: 8px; padding-top: 10px; border-top: 1px dashed var(--line); }
+.table-view .details summary { width: fit-content; }
+.table-view .details p { max-width: 850px; margin-bottom: 3px; }
+.table-view .details-card-label { display: none; }
+.table-view .details-table-label { display: inline; }
 
 .no-results { padding: 65px 20px; border: 1px solid var(--line); background: var(--cream); text-align: center; }
 .no-results > span { width: 42px; height: 42px; margin: auto; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--teal); font-size: 1.25rem; font-weight: 700; }
@@ -146,7 +157,9 @@ footer p { margin: 0; }
   .course-results { grid-template-columns: 1fr; }
   .table-view .course-card { grid-template-columns: 1fr auto; }
   .table-view .requirements { grid-column: 1; grid-row: 3; }
-  .table-view .card-actions { grid-column: 2; grid-row: 1 / span 3; }
+  .table-view .course-link { grid-column: 2; grid-row: 1 / span 3; }
+  .table-view .details { grid-column: 1 / -1; grid-row: 4; }
+  .table-columns { display: none; }
 }
 
 @media (max-width: 590px) {
@@ -168,8 +181,8 @@ footer p { margin: 0; }
   .requirements { grid-template-columns: 1fr; gap: 3px; }
   .requirements strong { text-align: left; }
   .table-view .course-card { grid-template-columns: 1fr; gap: 8px; }
-  .table-view .requirements, .table-view .card-actions { grid-column: 1; grid-row: auto; }
-  .table-view .card-actions { margin-top: 8px; }
+  .table-view .requirements, .table-view .course-link, .table-view .details { grid-column: 1; grid-row: auto; }
+  .table-view .course-link { margin-top: 8px; justify-self: start; }
   .next-step-inner { align-items: flex-start; flex-direction: column; gap: 24px; }
   footer .shell, .footer-meta { align-items: flex-start; flex-direction: column; gap: 7px; text-align: left; }
 }
