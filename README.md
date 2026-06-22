@@ -37,15 +37,41 @@ Create one parent content item containing a repeatable `Courses` group. Suggeste
 
 The Content Layout would output each repeatable item as either JSON consumed by `app.js`, or as semantic `<article>` markup carrying values in `data-*` attributes. JSON is simpler to filter and reduces duplicated markup.
 
-## Refreshing course data
+## Building approved course data
 
-The UI reads generated records from `courses.js`. To rebuild it from an updated copy of the working Word document, run:
+The controlled Excel workbook is the editorial source for ongoing Clearing updates. Export or download the approved `.xlsx` from Teams, then validate it without changing any live files:
+
+```bash
+python3 build-clearing-data.py "/path/to/Clearing-2026-Course-Data-Master.xlsx" --dry-run
+```
+
+When the report passes and its warnings have been reviewed, create the upload package:
+
+```bash
+python3 build-clearing-data.py "/path/to/Clearing-2026-Course-Data-Master.xlsx"
+```
+
+The script uses only Python's standard library. A successful run creates:
+
+- `build/clearing-data/current/courses.json` for a TerminalFour or server integration
+- `build/clearing-data/current/courses.js` for the current prototype
+- `build/clearing-data/current/courses.csv` for audit and checking
+- `build/clearing-data/current/static-backup/` as a complete emergency HTML site
+- `manifest.json`, SHA-256 checksums and human/machine-readable validation reports
+
+The build is fail-closed. Validation errors produce a report under `build/clearing-data/reports/` but do not replace `current/`. On each later successful build, the previous `current/` package moves to a timestamped folder under `archive/` before the new staged package is promoted. Upload generated files only; never edit them directly.
+
+Use `--expected-count 372` when a separately approved total is available. This catches an accidental bulk deletion even when the remaining rows are individually valid. The number should come from the release approval, not simply from the previous build.
+
+## Original Word import
+
+The UI initially used a one-off import from the supplied working Word document:
 
 ```bash
 python3 scripts/import_courses.py "/path/to/Clearing vacancies and ER page for 2026.docx" --output courses.js
 ```
 
-The importer merges the undergraduate vacancy list and Foundation Year A-Z, preserves document hyperlinks, appends `#foundationyear` to FY links, standardises tariff wording and carries known vacancy statuses into the dataset.
+The importer merges the undergraduate vacancy list and Foundation Year A-Z, preserves document hyperlinks, appends `#foundationyear` to FY links, standardises tariff wording and carries known vacancy statuses into the dataset. It is retained for traceability, but it is not the ongoing production workflow once the Excel master is in use.
 
 ## Production notes
 
