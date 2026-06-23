@@ -1,6 +1,7 @@
 CLEARING DATA BUILD
 
 TerminalFour/server data: courses.json (or courses.js for the current prototype).
+CMS course source: paste clearing-course-source-cms.html into #clearing-course-source on the Clearing page.
 Emergency static site: upload the complete contents of static-backup/.
 Review validation-report.txt and manifest.json before uploading anything.
 Do not edit generated files directly; update the controlled workbook and rebuild.

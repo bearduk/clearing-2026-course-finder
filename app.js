@@ -252,7 +252,7 @@ function courseCard(course) {
       <div class="card-actions">
         <details class="details">
           <summary>
-            <span class="details-card-label">More about entry requirements</span>
+            <span class="details-card-label">Entry requirement information</span>
             <span class="details-table-label">Entry requirement details</span>
           </summary>
           <p>${course.info}</p>

@@ -1,86 +1,102 @@
 # Keele Clearing course finder proof of concept
 
-A dependency-free prototype for showing undergraduate and foundation year Clearing courses in one searchable A-Z. Course data is maintained in a controlled Excel workbook, validated locally, and published as generated files. Open `index.html` directly or serve the folder with any static web server after running the build.
+A dependency-free prototype for showing undergraduate and foundation year Clearing courses in one searchable A–Z. Course data is maintained in a controlled Excel workbook, validated locally, and published as generated files.
 
-This is a public proof of concept, not a production service. Search indexing is discouraged through page-level `noindex` directives and a site-wide `robots.txt` disallow rule. These measures are not authentication and do not make a published URL private.
+This is a public proof of concept, not a production service. Search indexing is discouraged through page-level `noindex` directives and a site-wide `robots.txt` disallow rule.
 
 ## What the prototype demonstrates
 
-- Fuzzy search across course title, description and requirements, powered by a locally vendored Fuse.js 7.1.0 build
-- Undergraduate/Foundation Year filters
-- Availability filtering for vacancies, limited vacancies, waiting lists and full courses
-- A-Z filtering
-- Card and compact table-style views
+- Fuzzy search across course title, description and requirements (Fuse.js)
+- Undergraduate / Foundation year filters and availability filtering
+- A–Z filtering, card and table views
 - Expandable entry-requirement information
 - Links to full Keele course pages
 - Responsive layout and keyboard-accessible controls
-- An explicit warning that the prototype data is illustrative
-- A page last-modified date, ready to map to TerminalFour metadata
-- A validated dataset generated from the controlled Clearing Excel workbook
+- A validated dataset generated from the controlled Excel workbook
 
 ## Data architecture
 
-The working model is deliberately separate from TerminalFour content items:
-
 1. Teams/SharePoint holds the controlled Excel master and its version history.
-2. An approved copy is downloaded to `inputs/Clearing-2026-Course-Data-Master.xlsx`.
-3. `build-clearing-data.py` validates every row and generates the public data package.
-4. The main prototype loads `build/clearing-data/current/courses.js`.
-5. TerminalFour can use the generated `courses.json` or `courses.js` without creating one section or content item per course.
-6. `static-backup/` is uploaded as a complete emergency site if the TerminalFour presentation is unavailable.
+2. An approved copy is downloaded to `inputs/Clearing-2026-Course-Data-Master.xlsx` (or use the repo root copy).
+3. `build-clearing-data.py` validates every row and generates the publish package.
+4. **TerminalFour (recommended):** paste `clearing-course-source-cms.html` into `#clearing-course-source` on the Clearing page; the k-website finder JS reads the markup.
+5. **GitHub demo / emergency backup:** loads `build/clearing-data/current/courses.js` via `index.html`.
 
-The Excel workbook is the only editorial source. Generated JSON, JavaScript, CSV and HTML files must never be edited directly.
+The Excel workbook is the only editorial source. Generated files must never be edited directly.
+
+## Excel workbook columns
+
+Editor-maintained columns on the **Courses** sheet:
+
+| Column | Required |
+|--------|----------|
+| Record ID | Yes |
+| Course Title | Yes |
+| Course Type | Yes |
+| Availability | Yes |
+| UCAS Code | No |
+| Award | No |
+| Typical Offer | Yes |
+| Entry Requirement Summary | Yes |
+| Entry Requirements URL | No |
+| Course URL | Yes |
+| Display | Yes |
+| Last Reviewed | Yes |
+| Row Check | Formula (do not edit) |
+
+Academic year is hardcoded to **2026** in the build (`CLEARING_ACADEMIC_YEAR`). Governance uses the **Change Log** sheet, not per-row owner/note columns.
+
+See **START HERE** in the workbook for editing workflow and entry-requirements guidance.
 
 ## Building approved course data
 
-The controlled Excel workbook in Teams is the editorial source for ongoing Clearing updates. Download the approved copy to `inputs/Clearing-2026-Course-Data-Master.xlsx`, replacing the previous local input, then validate it without changing any live files:
-
 ```bash
-python3 build-clearing-data.py --dry-run
+python3 build-clearing-data.py --dry-run Clearing-2026-Course-Data-Master.xlsx
 ```
 
-When the report passes and its warnings have been reviewed, create the upload package:
+When the report passes (review warnings), create the package:
 
 ```bash
-python3 build-clearing-data.py
+python3 build-clearing-data.py Clearing-2026-Course-Data-Master.xlsx
 ```
 
-Before uploading, read `build/clearing-data/current/validation-report.txt`, confirm the approved total and warning decisions, and spot-check the generated static backup. Upload the required generated data file for TerminalFour and the complete `static-backup/` directory to its agreed emergency location.
+A successful run creates under `build/clearing-data/current/`:
 
-The `inputs/` directory is local working space and is excluded from Git so the editorial workbook is not published through GitHub Pages. The script uses only Python's standard library. A successful run creates:
+| Output | Use |
+|--------|-----|
+| `clearing-course-source-cms.html` | **Paste into TerminalFour** `#clearing-course-source` (articles only) |
+| `courses.json` / `courses.js` | GitHub demo, integrations |
+| `courses.csv` | Audit |
+| `static-backup/` | Emergency static site |
+| `validation-report.txt` | Pre-publish check |
 
-- `build/clearing-data/current/courses.json` for a TerminalFour or server integration
-- `build/clearing-data/current/courses.js` for the current prototype
-- `build/clearing-data/current/courses.csv` for audit and checking
-- `build/clearing-data/current/static-backup/` as a complete emergency HTML site
-- `manifest.json`, SHA-256 checksums and human/machine-readable validation reports
+The build is fail-closed: errors do not replace `current/`. Previous packages archive to `build/clearing-data/archive/`.
 
-The build is fail-closed. Validation errors produce a report under `build/clearing-data/reports/` but do not replace `current/`. On each later successful build, the previous `current/` package moves to a timestamped folder under `archive/` before the new staged package is promoted. Upload generated files only; never edit them directly.
+Use `--expected-count 372` when a separately approved total is available.
 
-The old `outputs/` directory contains only workbook-generation artefacts and visual previews. It is not read by the site or build process and can be deleted.
+## CMS publish workflow (k-website)
 
-Use `--expected-count 372` when a separately approved total is available. This catches an accidental bulk deletion even when the remaining rows are individually valid. The number should come from the release approval, not simply from the previous build.
+1. Run build (0 errors).
+2. Copy contents of `clearing-course-source-cms.html`.
+3. In T4, replace articles inside `<div id="clearing-course-source" hidden>` on the Clearing page.
+4. Ensure the page also has `#clearing-cms-validation` and the `k-clearing-course-finder` module (one-time setup).
+5. Preview with k-website `npm run watch` + t4proxy.
+6. Record release in workbook **Change Log**.
+
+Full CMS handoff: `k-website` repo → `t4/content-types/k-clearing-course-finder/k-clearing-course-finder-notes.md`.
 
 ## Original Word import
-
-The UI initially used a one-off import from the supplied working Word document:
 
 ```bash
 python3 scripts/import_courses.py "/path/to/Clearing vacancies and ER page for 2026.docx"
 ```
 
-The importer writes to `archive/legacy-word-import/courses.js` by default. It merges the undergraduate vacancy list and Foundation Year A-Z, preserves document hyperlinks, appends `#foundationyear` to FY links, standardises tariff wording and carries known vacancy statuses into the dataset. It is retained for traceability, but it is not the ongoing production workflow once the Excel master is in use.
+Retained for traceability only. The Excel master is the ongoing workflow.
 
 ## Production notes
 
-- Keep edit access to the Teams master restricted to the named officers and retain SharePoint version history.
-- Use the second-person review and release record described in the workbook before uploading generated files.
-- Confirm the separately approved record total instead of copying the previous build's total automatically.
-- Keep the emergency static backup in a distinct, documented server location and test it after each upload.
-- TerminalFour should present the generated data; it should not become a second manually maintained source.
-- Use Keele's production header/footer and existing design tokens when moved into the main site.
-- Run an accessibility review with the component inside the full Keele template.
-
-## Search behaviour
-
-Fuse.js is loaded locally from `fuse.min.js`, so search also works when `index.html` is opened directly. Results are weighted toward course titles, followed by the short description, additional entry information and requirements. The threshold is deliberately forgiving enough to match common misspellings without making unrelated results too prominent.
+- Restrict edit access to the Teams master; retain version history.
+- Second-person review before paste/publish (QA Dashboard in workbook).
+- Confirm approved record total; do not copy the previous build count blindly.
+- TerminalFour presents generated data; do not maintain a second manual source.
+- Run accessibility review with the component in the full Keele template.

@@ -35,6 +35,7 @@ except ImportError:  # pragma: no cover - Python 3.9+ includes zoneinfo.
 
 
 SHEET_NAME = "Courses"
+CLEARING_ACADEMIC_YEAR = 2026
 COURSE_TYPES = {"Undergraduate", "Foundation year"}
 AVAILABILITIES = {"Vacancies", "Limited vacancies", "Waiting list", "Full"}
 YES_NO = {"Yes", "No"}
@@ -54,7 +55,6 @@ PUBLIC_FIELDS = (
 )
 REQUIRED_COLUMNS = (
     "Record ID",
-    "Academic Year",
     "Course Title",
     "Course Type",
     "Availability",
@@ -63,26 +63,20 @@ REQUIRED_COLUMNS = (
     "Course URL",
     "Display",
     "Last Reviewed",
-    "Content Owner",
-    "Change Note",
 )
 EDITOR_COLUMNS = {
     "Record ID",
-    "Academic Year",
     "Course Title",
     "Course Type",
     "Availability",
     "UCAS Code",
     "Award",
     "Typical Offer",
-    "Subject-specific Requirements",
     "Entry Requirement Summary",
     "Entry Requirements URL",
     "Course URL",
     "Display",
     "Last Reviewed",
-    "Content Owner",
-    "Change Note",
 }
 BACKUP_ASSETS = ("index.html", "styles.css", "app.js", "fuse.min.js", "robots.txt")
 NS = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
@@ -368,20 +362,13 @@ def validate(headers: list[str], rows: list[WorkbookRow], today: date) -> Valida
         ucas = clean_text(row.get("UCAS Code")).upper()
         award = clean_text(row.get("Award"))
         typical_offer = clean_text(row.get("Typical Offer"))
-        subject_specific = clean_text(row.get("Subject-specific Requirements"))
         info = clean_text(row.get("Entry Requirement Summary"))
         entry_url = clean_text(row.get("Entry Requirements URL"))
         course_url = clean_text(row.get("Course URL"))
         display = clean_text(row.get("Display"))
-        owner = clean_text(row.get("Content Owner"))
-        change_note = clean_text(row.get("Change Note"))
         reviewed = excel_date(row.get("Last Reviewed"))
 
-        year_value = row.get("Academic Year")
-        try:
-            academic_year = int(year_value)
-        except (TypeError, ValueError):
-            academic_year = 0
+        academic_year = CLEARING_ACADEMIC_YEAR
 
         required_values = {
             "Record ID": record_id,
@@ -392,8 +379,6 @@ def validate(headers: list[str], rows: list[WorkbookRow], today: date) -> Valida
             "Entry Requirement Summary": info,
             "Course URL": course_url,
             "Display": display,
-            "Content Owner": owner,
-            "Change Note": change_note,
         }
         for column, value in required_values.items():
             if not value:
@@ -405,8 +390,6 @@ def validate(headers: list[str], rows: list[WorkbookRow], today: date) -> Valida
             "Award": award,
             "Typical Offer": typical_offer,
             "Entry Requirement Summary": info,
-            "Content Owner": owner,
-            "Change Note": change_note,
         }.items():
             if CONTROL_RE.search(value):
                 add_issue(issues, "error", row_number, column, "Contains a control character")
@@ -426,16 +409,12 @@ def validate(headers: list[str], rows: list[WorkbookRow], today: date) -> Valida
         elif title and course_type:
             seen_routes[route_key] = row_number
 
-        if not 2026 <= academic_year <= 2030:
-            add_issue(issues, "error", row_number, "Academic Year", "Must be a whole year from 2026 to 2030")
         if course_type not in COURSE_TYPES:
             add_issue(issues, "error", row_number, "Course Type", f"Must be one of: {', '.join(sorted(COURSE_TYPES))}")
         if availability not in AVAILABILITIES:
             add_issue(issues, "error", row_number, "Availability", f"Must be one of: {', '.join(sorted(AVAILABILITIES))}")
         if display not in YES_NO:
             add_issue(issues, "error", row_number, "Display", "Must be Yes or No")
-        if subject_specific and subject_specific not in YES_NO:
-            add_issue(issues, "error", row_number, "Subject-specific Requirements", "Must be Yes, No or blank")
         if ucas and not UCAS_RE.fullmatch(ucas):
             add_issue(issues, "error", row_number, "UCAS Code", "Must be four uppercase letters/numbers beginning with a letter")
         if ucas:
@@ -559,6 +538,38 @@ def write_json(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def render_cms_source_article(record: dict[str, Any]) -> str:
+    return (
+        "<article\n"
+        '  class="clearing-course-source-item"\n'
+        f'  data-record-id="{html.escape(record["recordId"], quote=True)}"\n'
+        f'  data-academic-year="{record["academicYear"]}"\n'
+        f'  data-title="{html.escape(record["title"], quote=True)}"\n'
+        f'  data-type="{html.escape(record["type"], quote=True)}"\n'
+        f'  data-status="{html.escape(record["status"], quote=True)}"\n'
+        f'  data-ucas="{html.escape(record.get("ucas") or "", quote=True)}"\n'
+        f'  data-requirements="{html.escape(record["requirements"], quote=True)}"\n'
+        f'  data-summary="{html.escape(record["summary"], quote=True)}"\n'
+        f'  data-entry-requirements-url="{html.escape(record.get("entryRequirementsUrl") or "", quote=True)}"\n'
+        f'  data-url="{html.escape(record["url"], quote=True)}"\n'
+        f'  data-last-reviewed="{html.escape(record.get("lastReviewed") or "", quote=True)}"\n'
+        ">\n"
+        f'  <div class="course-info">{html.escape(record["info"])}</div>\n'
+        "</article>"
+    )
+
+
+def render_cms_source_html(records: list[dict[str, Any]], source_name: str, generated_at: datetime) -> str:
+    header = (
+        "<!-- Generated by build-clearing-data.py. Do not edit directly. -->\n"
+        f"<!-- Source: {html.escape(source_name)} -->\n"
+        f"<!-- Generated: {html.escape(generated_at.isoformat(timespec='seconds'))} -->\n"
+        f"<!-- Records: {len(records)} -->\n"
+        "<!-- Paste these articles inside <div id=\"clearing-course-source\" hidden> on the Clearing page. -->\n\n"
+    )
+    return header + "\n\n".join(render_cms_source_article(record) for record in records) + "\n"
+
+
 def update_backup_html(source: str, generated_at: datetime, record_count: int) -> str:
     machine_date = generated_at.date().isoformat()
     human_date = f"{generated_at.day} {generated_at.strftime('%B %Y')}"
@@ -623,6 +634,11 @@ def build_package(
             writer.writeheader()
             writer.writerows(result.records)
 
+        (staging / "clearing-course-source-cms.html").write_text(
+            render_cms_source_html(result.records, source.name, generated_at),
+            encoding="utf-8",
+        )
+
         write_json(staging / "validation-report.json", payload)
         (staging / "validation-report.txt").write_text(text_report(payload), encoding="utf-8")
 
@@ -641,6 +657,7 @@ def build_package(
         notes = (
             "CLEARING DATA BUILD\n\n"
             "TerminalFour/server data: courses.json (or courses.js for the current prototype).\n"
+            "CMS course source: paste clearing-course-source-cms.html into #clearing-course-source on the Clearing page.\n"
             "Emergency static site: upload the complete contents of static-backup/.\n"
             "Review validation-report.txt and manifest.json before uploading anything.\n"
             "Do not edit generated files directly; update the controlled workbook and rebuild.\n"

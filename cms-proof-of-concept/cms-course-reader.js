@@ -177,8 +177,9 @@
     const offer = course.requirements === "See entry requirements"
       ? "<strong>Course-specific</strong>"
       : `<strong>${escapeHtml(course.requirements)}</strong>`;
-    const requirementsLink = course.requirements === "See entry requirements"
-      ? `<a class="details-link" href="${escapeHtml(course.entryRequirementsUrl || clearingEntryRequirementsUrl)}">View Clearing entry requirements <span aria-hidden="true">→</span></a>`
+    const entryRequirementsUrl = course.entryRequirementsUrl || clearingEntryRequirementsUrl;
+    const requirementsLink = entryRequirementsUrl
+      ? `<a class="details-link" href="${escapeHtml(entryRequirementsUrl)}">View Clearing entry requirements <span aria-hidden="true">→</span></a>`
       : "";
     return `
       <article class="course-card" data-type="${escapeHtml(course.type)}" data-status="${escapeHtml(course.status)}">
@@ -198,7 +199,7 @@
         <div class="card-actions">
           <details class="details">
             <summary>
-              <span class="details-card-label">More about entry requirements</span>
+              <span class="details-card-label">Entry requirement information</span>
               <span class="details-table-label">Entry requirement details</span>
             </summary>
             <p>${escapeHtml(course.info)}</p>
