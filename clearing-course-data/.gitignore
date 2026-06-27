@@ -1,0 +1,11 @@
+# Workbook copies and generated build outputs are never committed.
+# The controlled master lives in Teams/SharePoint; only an approved working copy
+# is placed in inputs/ at build time.
+inputs/*
+!inputs/README.md
+build/
+__pycache__/
+
+# Dev-only: parity-test Node dependency (the shipped tool has no dependencies).
+tools/node_modules/
+tools/package-lock.json

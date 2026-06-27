@@ -5,3 +5,5 @@ inputs/*
 build/clearing-data/*
 !build/clearing-data/current/
 !build/clearing-data/current/**
+tools/node_modules/
+tools/package-lock.json

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<!--
+  Keele Clearing — Excel to CMS HTML converter (client-side)
+  =========================================================
+  Single self-contained page. Upload the controlled Clearing workbook, validate
+  it, and copy CMS-ready <article> markup for the TerminalFour Clearing page.
+
+  Nothing is uploaded to a server: the .xlsx is read entirely in the browser.
+
+  IMPORTANT — keep in lock-step with build-clearing-data.py
+  --------------------------------------------------------
+  The validation rules, record shaping and CMS HTML output below are a direct
+  port of build-clearing-data.py. If you change the rules in EITHER file you
+  MUST change them in the other and re-run the parity test (tools/parity-test).
+  The Python build remains the source for courses.json/js/csv and the static
+  backup; this page only produces the paste-into-T4 HTML.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Clearing course data — Excel to CMS HTML</title>
+<style>
+  :root {
+    --ink: #1c1c1e;
+    --muted: #5b5b60;
+    --line: #d9d9de;
+    --bg: #f5f5f4;
+    --card: #ffffff;
+    --accent: #1f6f6a;
+    --accent-ink: #0f3b38;
+    --pass-bg: #e7f4ec; --pass-line: #1c7a45; --pass-ink: #14542f;
+    --fail-bg: #fbeaea; --fail-line: #b3261e; --fail-ink: #7a1812;
+    --warn-bg: #fef6e7; --warn-line: #9a6b00; --warn-ink: #6b4b00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  header.site {
+    background: var(--accent); color: #fff; padding: 18px 20px;
+  }
+  header.site h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+  header.site p { margin: 4px 0 0; opacity: .9; font-size: .9rem; }
+  main { max-width: 880px; margin: 0 auto; padding: 24px 20px 64px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 22px; margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 1.05rem; }
+  .step { color: var(--muted); font-size: .9rem; margin: 0 0 16px; }
+  .drop {
+    border: 2px dashed var(--line); border-radius: 10px; padding: 26px;
+    text-align: center; transition: border-color .15s, background .15s; cursor: pointer;
+  }
+  .drop.drag { border-color: var(--accent); background: #f0f8f7; }
+  .drop input { display: none; }
+  .filename { margin-top: 12px; font-size: .9rem; color: var(--muted); }
+  .filename strong { color: var(--ink); }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+  button {
+    font: inherit; font-weight: 600; border: 1px solid transparent; border-radius: 8px;
+    padding: 10px 18px; cursor: pointer;
+  }
+  button.primary { background: var(--accent); color: #fff; }
+  button.primary:disabled { background: #b8c9c7; cursor: not-allowed; }
+  button.ghost { background: #fff; border-color: var(--line); color: var(--ink); }
+  .banner { border-radius: 8px; padding: 14px 16px; font-weight: 600; border: 1px solid; }
+  .banner.pass { background: var(--pass-bg); border-color: var(--pass-line); color: var(--pass-ink); }
+  .banner.fail { background: var(--fail-bg); border-color: var(--fail-line); color: var(--fail-ink); }
+  .banner .sub { display: block; font-weight: 400; margin-top: 4px; font-size: .9rem; }
+  dl.summary { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; margin: 16px 0 0; font-size: .92rem; }
+  dl.summary dt { color: var(--muted); }
+  dl.summary dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .issues { margin: 16px 0 0; padding: 0; list-style: none; max-height: 320px; overflow: auto; border: 1px solid var(--line); border-radius: 8px; }
+  .issues:empty { display: none; }
+  .issues li { padding: 8px 12px; border-bottom: 1px solid var(--line); font-size: .88rem; }
+  .issues li:last-child { border-bottom: 0; }
+  .tag { display: inline-block; min-width: 62px; text-align: center; font-size: .72rem; font-weight: 700;
+         padding: 2px 6px; border-radius: 4px; margin-right: 8px; letter-spacing: .03em; }
+  .tag.error { background: var(--fail-bg); color: var(--fail-ink); }
+  .tag.warning { background: var(--warn-bg); color: var(--warn-ink); }
+  .loc { color: var(--muted); }
+  textarea {
+    width: 100%; height: 260px; margin-top: 12px; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    border: 1px solid var(--line); border-radius: 8px; padding: 12px; resize: vertical; white-space: pre; overflow: auto;
+  }
+  .paste-note { margin: 10px 0 0; font-size: .85rem; color: var(--muted); }
+  .paste-note code { background: #eee; padding: 1px 5px; border-radius: 4px; }
+  .hidden { display: none; }
+  .copied { color: var(--pass-line); font-size: .85rem; font-weight: 600; }
+  footer { color: var(--muted); font-size: .8rem; text-align: center; padding: 0 20px 40px; }
+</style>
+</head>
+<body>
+<header class="site">
+  <h1>Clearing course data → CMS HTML</h1>
+  <p>Validates the controlled workbook and produces paste-ready markup. Runs entirely in your browser.</p>
+</header>
+
+<main>
+  <section class="card" aria-labelledby="upload-h">
+    <h2 id="upload-h">1. Choose the workbook</h2>
+    <p class="step">Select the approved <code>.xlsx</code> master (the file with the <strong>Courses</strong> sheet). It is read locally and never uploaded.</p>
+    <label class="drop" id="drop" for="file">
+      <span id="dropLabel">Drop the .xlsx here, or click to browse</span>
+      <input type="file" id="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+    </label>
+    <p class="filename" id="filename" aria-live="polite"></p>
+    <div class="row">
+      <button class="primary" id="process" disabled>Process</button>
+      <button class="ghost hidden" id="reset">Start again</button>
+    </div>
+  </section>
+
+  <section class="card hidden" id="results" aria-labelledby="results-h" aria-live="polite">
+    <h2 id="results-h">2. Result</h2>
+    <div id="banner"></div>
+    <dl class="summary" id="summary"></dl>
+    <ul class="issues" id="issues"></ul>
+  </section>
+
+  <section class="card hidden" id="outputCard" aria-labelledby="output-h">
+    <h2 id="output-h">3. Copy into TerminalFour</h2>
+    <div class="row">
+      <button class="primary" id="copy">Copy HTML</button>
+      <span class="copied hidden" id="copied">Copied to clipboard</span>
+    </div>
+    <textarea id="output" readonly spellcheck="false" aria-label="Generated CMS HTML"></textarea>
+    <p class="paste-note">Paste inside <code>&lt;div id="clearing-course-source" hidden&gt;</code> on the Clearing page, then record the release in the workbook <strong>Change Log</strong>.</p>
+  </section>
+</main>
+
+<footer>
+  Keele University — Clearing build tool. Mirrors <code>build-clearing-data.py</code>. Not a search-indexed page.
+</footer>
+
+<script>
+"use strict";
+/* =======================================================================
+   PORT OF build-clearing-data.py  (validation + shaping + CMS HTML output)
+   ======================================================================= */
+
+const SHEET_NAME = "Courses";
+const CLEARING_ACADEMIC_YEAR = 2026;
+const COURSE_TYPES = new Set(["Undergraduate", "Foundation year"]);
+const AVAILABILITIES = new Set(["Vacancies", "Limited vacancies", "Waiting list", "Full"]);
+const YES_NO = new Set(["Yes", "No"]);
+const REQUIRED_COLUMNS = [
+  "Record ID", "Course Title", "Course Type", "Availability",
+  "Typical Offer", "Entry Requirement Summary", "Course URL", "Display", "Last Reviewed",
+];
+const EDITOR_COLUMNS = new Set([
+  "Record ID", "Course Title", "Course Type", "Availability", "UCAS Code", "Award",
+  "Typical Offer", "Entry Requirement Summary", "Entry Requirements URL", "Course URL",
+  "Display", "Last Reviewed",
+]);
+const CELL_REF_RE = /^([A-Z]+)(\d+)$/;
+const UCAS_RE = /^[A-Z][A-Z0-9]{3}$/;
+const RECORD_ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]{2,79}$/;
+const CONTROL_RE = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]/;
+
+class BuildError extends Error {}
+
+/* ---- small helpers ---------------------------------------------------- */
+function pyStr(v) {
+  if (v === true) return "True";
+  if (v === false) return "False";
+  return String(v);
+}
+function cleanText(v) {
+  if (v === null || v === undefined) return "";
+  return pyStr(v).replace(/\s+/g, " ").trim();
+}
+function columnNumber(ref) {
+  const m = CELL_REF_RE.exec(ref);
+  if (!m) throw new BuildError("Invalid cell reference in workbook: " + JSON.stringify(ref));
+  let n = 0;
+  for (const ch of m[1]) n = n * 26 + (ch.charCodeAt(0) - 64);
+  return n;
+}
+function normaliseMember(target) {
+  if (target.startsWith("/")) return target.replace(/^\/+/, "");
+  return "xl/" + target;
+}
+
+/* ---- dates (mirror excel_date) --------------------------------------- */
+const MONTHS = {
+  january:1, february:2, march:3, april:4, may:5, june:6, july:7, august:8,
+  september:9, october:10, november:11, december:12,
+  jan:1, feb:2, mar:3, apr:4, jun:6, jul:7, aug:8, sep:9, oct:10, nov:11, dec:12,
+};
+function ordFromMs(ms) {
+  const dt = new Date(ms);
+  const y = dt.getUTCFullYear(), mo = dt.getUTCMonth() + 1, d = dt.getUTCDate();
+  const iso = String(y).padStart(4, "0") + "-" + String(mo).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+  return { ord: Math.floor(ms / 86400000), iso };
+}
+function mkDate(y, mo, d) {
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const ms = Date.UTC(y, mo - 1, d);
+  const dt = new Date(ms);
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return ordFromMs(ms);
+}
+function excelDate(value) {
+  if (typeof value === "number" && isFinite(value)) {
+    return ordFromMs(Date.UTC(1899, 11, 30) + Math.trunc(value) * 86400000);
+  }
+  const text = cleanText(value);
+  if (!text) return null;
+  let m;
+  if ((m = /^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(text))) return mkDate(+m[1], +m[2], +m[3]);
+  if ((m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(text))) return mkDate(+m[3], +m[2], +m[1]);
+  if ((m = /^(\d{1,2})-(\d{1,2})-(\d{4})$/.exec(text))) return mkDate(+m[3], +m[2], +m[1]);
+  if ((m = /^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/.exec(text))) {
+    const mo = MONTHS[m[2].toLowerCase()];
+    if (mo) return mkDate(+m[3], mo, +m[1]);
+  }
+  // ISO 8601 fallback (fromisoformat-style); take the date portion only.
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})([T ].*)?$/.exec(text.replace("Z", "+00:00"));
+  if (isoMatch) return mkDate(+isoMatch[1], +isoMatch[2], +isoMatch[3]);
+  return null;
+}
+
+/* ---- clean public URL (mirror public_url) ---------------------------- */
+function publicUrl(value, foundationYear) {
+  if (!value || CONTROL_RE.test(value) || /\s/.test(value)) return null;
+  let parsed;
+  try { parsed = new URL(value); } catch (e) { return null; }
+  const port = parsed.port; // "" when default
+  if (parsed.protocol !== "https:" || parsed.hostname !== "www.keele.ac.uk" ||
+      parsed.username || parsed.password) return null;
+  if (port !== "" && port !== "443") return null;
+  if (foundationYear && parsed.hash.replace(/^#/, "").toLowerCase() !== "foundationyear") return null;
+  return value;
+}
+
+/* ---- XML + ZIP reading ------------------------------------------------ */
+function parseXml(text) {
+  if (typeof DOMParser !== "undefined") {
+    const doc = new DOMParser().parseFromString(text, "application/xml");
+    if (doc.getElementsByTagName("parsererror").length) throw new BuildError("Invalid XML in workbook");
+    return doc;
+  }
+  if (typeof globalThis !== "undefined" && globalThis.__parseXml) return globalThis.__parseXml(text);
+  throw new BuildError("No XML parser available");
+}
+function els(node, tag) { return node ? Array.from(node.getElementsByTagName(tag)) : []; }
+function xmlText(node) {
+  if (!node) return "";
+  let s = "";
+  for (const t of els(node, "t")) s += (t.textContent || "");
+  return s;
+}
+async function inflateRaw(bytes) {
+  const ds = new DecompressionStream("deflate-raw");
+  const stream = new Blob([bytes]).stream().pipeThrough(ds);
+  const ab = await new Response(stream).arrayBuffer();
+  return new Uint8Array(ab);
+}
+function buildZipIndex(buf) {
+  const dv = new DataView(buf);
+  const u8 = new Uint8Array(buf);
+  let eocd = -1;
+  for (let i = u8.length - 22; i >= 0; i--) {
+    if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new BuildError("Cannot open file as an Excel .xlsx workbook");
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const entries = new Map();
+  const dec = new TextDecoder();
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(off, true) !== 0x02014b50) throw new BuildError("The workbook archive is damaged");
+    const method = dv.getUint16(off + 10, true);
+    const compSize = dv.getUint32(off + 20, true);
+    const fnLen = dv.getUint16(off + 28, true);
+    const exLen = dv.getUint16(off + 30, true);
+    const cmLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = dec.decode(u8.subarray(off + 46, off + 46 + fnLen));
+    entries.set(name, { method, compSize, lho });
+    off += 46 + fnLen + exLen + cmLen;
+  }
+  return { dv, u8, entries };
+}
+async function readEntry(zip, name) {
+  const e = zip.entries.get(name);
+  if (!e) return null;
+  const { dv, u8 } = zip;
+  if (dv.getUint32(e.lho, true) !== 0x04034b50) throw new BuildError("The workbook archive is damaged");
+  const fnLen = dv.getUint16(e.lho + 26, true);
+  const exLen = dv.getUint16(e.lho + 28, true);
+  const start = e.lho + 30 + fnLen + exLen;
+  const comp = u8.subarray(start, start + e.compSize);
+  if (e.method === 0) return comp;
+  if (e.method === 8) return await inflateRaw(comp);
+  throw new BuildError("Unsupported compression in workbook (method " + e.method + ")");
+}
+async function readTextEntry(zip, name) {
+  const b = await readEntry(zip, name);
+  return b ? new TextDecoder("utf-8").decode(b) : null;
+}
+
+function parseCell(cEl, sharedStrings) {
+  const t = cEl.getAttribute("t");
+  if (t === "inlineStr") return xmlText(els(cEl, "is")[0]);
+  const vNode = els(cEl, "v")[0] || null;
+  if (!vNode || vNode.textContent === null || vNode.textContent === "") return "";
+  const value = vNode.textContent;
+  if (t === "s") {
+    const idx = parseInt(value, 10);
+    if (Number.isNaN(idx) || idx < 0 || idx >= sharedStrings.length)
+      throw new BuildError("Workbook contains an invalid shared-string reference");
+    return sharedStrings[idx];
+  }
+  if (t === "str" || t === "e") return value;
+  if (t === "b") return value === "1";
+  if (t === "d") return value;
+  if (t === null || t === "n") {
+    const num = Number(value);
+    if (!Number.isNaN(num)) return num;
+    return value;
+  }
+  return value;
+}
+
+async function readSharedStrings(zip) {
+  if (!zip.entries.has("xl/sharedStrings.xml")) return [];
+  const text = await readTextEntry(zip, "xl/sharedStrings.xml");
+  const root = parseXml(text);
+  return els(root, "si").map((si) => xmlText(si));
+}
+
+async function readCoursesSheet(buf) {
+  const zip = buildZipIndex(buf);
+  const wbText = await readTextEntry(zip, "xl/workbook.xml");
+  const relText = await readTextEntry(zip, "xl/_rels/workbook.xml.rels");
+  if (wbText === null || relText === null) throw new BuildError("The workbook is missing required Office XML parts");
+  const wb = parseXml(wbText);
+  const rel = parseXml(relText);
+
+  const rels = new Map();
+  for (const r of els(rel, "Relationship")) rels.set(r.getAttribute("Id"), normaliseMember(r.getAttribute("Target") || ""));
+
+  const OFFICE_REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
+  let sheetMember = null;
+  for (const sh of els(wb, "sheet")) {
+    if (sh.getAttribute("name") === SHEET_NAME) {
+      let rid = sh.getAttribute("r:id");
+      if (!rid && sh.getAttributeNS) rid = sh.getAttributeNS(OFFICE_REL_NS, "id");
+      sheetMember = rels.get(rid);
+      break;
+    }
+  }
+  if (!sheetMember || !zip.entries.has(sheetMember))
+    throw new BuildError("Workbook must contain a sheet named '" + SHEET_NAME + "'");
+
+  const sharedStrings = await readSharedStrings(zip);
+  const sheetText = await readTextEntry(zip, sheetMember);
+  const sheet = parseXml(sheetText);
+
+  const rawRows = [];
+  for (const rowEl of els(sheet, "row")) {
+    const rowNumber = parseInt(rowEl.getAttribute("r") || "0", 10);
+    const cells = new Map();
+    const formulaCols = new Set();
+    for (const cEl of els(rowEl, "c")) {
+      const ref = cEl.getAttribute("r") || "";
+      const col = columnNumber(ref);
+      cells.set(col, parseCell(cEl, sharedStrings));
+      if (els(cEl, "f").length > 0) formulaCols.add(col);
+    }
+    rawRows.push({ rowNumber, cells, formulaCols });
+  }
+
+  let headerIndex = -1;
+  let headers = [];
+  const scan = rawRows.slice(0, 30);
+  for (let i = 0; i < scan.length; i++) {
+    const cells = scan[i].cells;
+    const maxCol = cells.size ? Math.max(...cells.keys()) : 0;
+    const candidate = [];
+    for (let c = 1; c <= maxCol; c++) candidate.push(cells.has(c) ? pyStr(cells.get(c)).trim() : "");
+    if (candidate.includes("Record ID") && candidate.includes("Course Title")) {
+      headerIndex = i; headers = candidate; break;
+    }
+  }
+  if (headerIndex < 0) throw new BuildError("Could not find the Courses table header row");
+
+  const rows = [];
+  for (let k = headerIndex + 1; k < rawRows.length; k++) {
+    const { rowNumber, cells, formulaCols } = rawRows[k];
+    const values = {};
+    headers.forEach((h, idx) => { if (h) values[h] = cells.has(idx + 1) ? cells.get(idx + 1) : ""; });
+    let any = false;
+    for (const col of EDITOR_COLUMNS) {
+      if (pyStr(values[col] === undefined ? "" : values[col]).trim()) { any = true; break; }
+    }
+    if (!any) continue;
+    const formulaHeaders = new Set();
+    for (const col of formulaCols) {
+      if (col > 0 && col <= headers.length && headers[col - 1]) formulaHeaders.add(headers[col - 1]);
+    }
+    rows.push({ number: rowNumber, values, formulaColumns: formulaHeaders });
+  }
+  return { headers, rows };
+}
+
+/* ---- validation (mirror validate) ------------------------------------ */
+function addIssue(issues, severity, row, column, message) {
+  issues.push({ severity, row, column, message });
+}
+function errorCount(issues) { let n = 0; for (const i of issues) if (i.severity === "error") n++; return n; }
+
+function validate(headers, rows, today) {
+  const issues = [];
+  const records = [];
+  let suppressed = 0;
+
+  for (const column of REQUIRED_COLUMNS) {
+    if (!headers.includes(column)) addIssue(issues, "error", null, column, "Required column is missing");
+  }
+  if (errorCount(issues) > 0) return { records: [], issues, sourceRows: rows.length, suppressed: 0 };
+
+  const seenIds = new Map(), seenRoutes = new Map(), seenUrls = new Map(), seenUcas = new Map();
+
+  for (const item of rows) {
+    const row = item.values;
+    const rowNumber = item.number;
+    const errBefore = errorCount(issues);
+
+    const fcols = [...item.formulaColumns].filter((c) => EDITOR_COLUMNS.has(c)).sort();
+    for (const column of fcols) addIssue(issues, "error", rowNumber, column, "Formulas are not allowed in editor-maintained cells");
+
+    const recordId = cleanText(row["Record ID"]);
+    const title = cleanText(row["Course Title"]);
+    const courseType = cleanText(row["Course Type"]);
+    const availability = cleanText(row["Availability"]);
+    const ucas = cleanText(row["UCAS Code"]).toUpperCase();
+    const award = cleanText(row["Award"]);
+    const typicalOffer = cleanText(row["Typical Offer"]);
+    const info = cleanText(row["Entry Requirement Summary"]);
+    const entryUrl = cleanText(row["Entry Requirements URL"]);
+    const courseUrl = cleanText(row["Course URL"]);
+    const display = cleanText(row["Display"]);
+    const reviewed = excelDate(row["Last Reviewed"]);
+    const academicYear = CLEARING_ACADEMIC_YEAR;
+
+    const requiredValues = {
+      "Record ID": recordId, "Course Title": title, "Course Type": courseType,
+      "Availability": availability, "Typical Offer": typicalOffer,
+      "Entry Requirement Summary": info, "Course URL": courseUrl, "Display": display,
+    };
+    for (const column of Object.keys(requiredValues)) {
+      if (!requiredValues[column]) addIssue(issues, "error", rowNumber, column, "Required value is blank");
+    }
+
+    for (const [column, value] of [
+      ["Record ID", recordId], ["Course Title", title], ["Award", award],
+      ["Typical Offer", typicalOffer], ["Entry Requirement Summary", info],
+    ]) {
+      if (CONTROL_RE.test(value)) addIssue(issues, "error", rowNumber, column, "Contains a control character");
+      if (value.includes("<") || value.includes(">")) addIssue(issues, "error", rowNumber, column, "HTML markup is not allowed");
+    }
+
+    if (recordId && !RECORD_ID_RE.test(recordId))
+      addIssue(issues, "error", rowNumber, "Record ID", "Use 3-80 letters, numbers, dots, underscores or hyphens");
+    if (seenIds.has(recordId.toLowerCase()))
+      addIssue(issues, "error", rowNumber, "Record ID", "Duplicate of row " + seenIds.get(recordId.toLowerCase()));
+    else if (recordId) seenIds.set(recordId.toLowerCase(), rowNumber);
+
+    const routeKey = title.toLowerCase() + " " + courseType.toLowerCase();
+    if (title && courseType && seenRoutes.has(routeKey))
+      addIssue(issues, "error", rowNumber, "Course Title", "Duplicate course route from row " + seenRoutes.get(routeKey));
+    else if (title && courseType) seenRoutes.set(routeKey, rowNumber);
+
+    if (!COURSE_TYPES.has(courseType))
+      addIssue(issues, "error", rowNumber, "Course Type", "Must be one of: " + [...COURSE_TYPES].sort().join(", "));
+    if (!AVAILABILITIES.has(availability))
+      addIssue(issues, "error", rowNumber, "Availability", "Must be one of: " + [...AVAILABILITIES].sort().join(", "));
+    if (!YES_NO.has(display))
+      addIssue(issues, "error", rowNumber, "Display", "Must be Yes or No");
+    if (ucas && !UCAS_RE.test(ucas))
+      addIssue(issues, "error", rowNumber, "UCAS Code", "Must be four uppercase letters/numbers beginning with a letter");
+    if (ucas) {
+      if (seenUcas.has(ucas)) addIssue(issues, "warning", rowNumber, "UCAS Code", "Also used on row " + seenUcas.get(ucas) + "; confirm this is intentional");
+      else seenUcas.set(ucas, rowNumber);
+    }
+
+    const isFoundation = courseType === "Foundation year";
+    if (courseUrl && publicUrl(courseUrl, isFoundation) === null) {
+      const suffix = isFoundation ? " and include #foundationyear" : "";
+      addIssue(issues, "error", rowNumber, "Course URL", "Must be a clean https://www.keele.ac.uk/ URL" + suffix);
+    }
+    if (entryUrl && publicUrl(entryUrl, false) === null)
+      addIssue(issues, "error", rowNumber, "Entry Requirements URL", "Must be a clean https://www.keele.ac.uk/ URL");
+    if (["course-specific", "see entry requirements"].includes(typicalOffer.toLowerCase()) && !entryUrl)
+      addIssue(issues, "error", rowNumber, "Entry Requirements URL", "Required when the typical offer is course-specific");
+    if (courseUrl) {
+      if (seenUrls.has(courseUrl)) addIssue(issues, "warning", rowNumber, "Course URL", "Also used on row " + seenUrls.get(courseUrl) + "; confirm this is intentional");
+      else seenUrls.set(courseUrl, rowNumber);
+    }
+
+    if (reviewed === null) addIssue(issues, "error", rowNumber, "Last Reviewed", "Must contain a valid date");
+    else if (reviewed.ord > today.ord + 1) addIssue(issues, "error", rowNumber, "Last Reviewed", "Cannot be in the future");
+    else if (reviewed.ord < today.ord - 14) addIssue(issues, "warning", rowNumber, "Last Reviewed", "Was reviewed more than 14 days ago");
+
+    if (title.length > 160) addIssue(issues, "error", rowNumber, "Course Title", "Must be 160 characters or fewer");
+    if (typicalOffer.length > 160) addIssue(issues, "error", rowNumber, "Typical Offer", "Must be 160 characters or fewer");
+    if (info.length > 1000) addIssue(issues, "error", rowNumber, "Entry Requirement Summary", "Must be 1,000 characters or fewer");
+
+    const errAfter = errorCount(issues);
+    if (display === "No") suppressed++;
+    if (errAfter !== errBefore || display !== "Yes") continue;
+
+    let requirements = typicalOffer;
+    if (["course-specific", "see entry requirements"].includes(typicalOffer.toLowerCase())) requirements = "See entry requirements";
+    const summary = award || (isFoundation ? "Foundation Year route" : "Undergraduate course");
+    records.push({
+      recordId, academicYear, title, type: courseType, status: availability, ucas,
+      requirements, summary, info, entryRequirementsUrl: entryUrl, url: courseUrl,
+      lastReviewed: reviewed ? reviewed.iso : "",
+    });
+  }
+
+  records.sort((a, b) => {
+    const at = a.title.toLowerCase(), bt = b.title.toLowerCase();
+    if (at < bt) return -1;
+    if (at > bt) return 1;
+    const af = a.type !== "Undergraduate", bf = b.type !== "Undergraduate";
+    return af === bf ? 0 : (af ? 1 : -1);
+  });
+
+  if (rows.length === 0) addIssue(issues, "error", null, null, "The Courses sheet contains no records");
+  if (rows.length > 0 && records.length === 0 && errorCount(issues) === 0)
+    addIssue(issues, "error", null, "Display", "No records are marked for display");
+
+  return { records, issues, sourceRows: rows.length, suppressed };
+}
+
+/* ---- CMS HTML output (mirror render_cms_source_*) -------------------- */
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+}
+function renderCmsSourceArticle(r) {
+  return (
+    "<article\n" +
+    '  class="clearing-course-source-item"\n' +
+    '  data-record-id="' + escapeHtml(r.recordId) + '"\n' +
+    '  data-academic-year="' + r.academicYear + '"\n' +
+    '  data-title="' + escapeHtml(r.title) + '"\n' +
+    '  data-type="' + escapeHtml(r.type) + '"\n' +
+    '  data-status="' + escapeHtml(r.status) + '"\n' +
+    '  data-ucas="' + escapeHtml(r.ucas || "") + '"\n' +
+    '  data-requirements="' + escapeHtml(r.requirements) + '"\n' +
+    '  data-summary="' + escapeHtml(r.summary) + '"\n' +
+    '  data-entry-requirements-url="' + escapeHtml(r.entryRequirementsUrl || "") + '"\n' +
+    '  data-url="' + escapeHtml(r.url) + '"\n' +
+    '  data-last-reviewed="' + escapeHtml(r.lastReviewed || "") + '"\n' +
+    ">\n" +
+    '  <div class="course-info">' + escapeHtml(r.info) + "</div>\n" +
+    "</article>"
+  );
+}
+function renderCmsSourceHtml(records, sourceName, generatedAtIso) {
+  const header =
+    "<!-- Generated by the Keele Clearing web tool (mirrors build-clearing-data.py). Do not edit directly. -->\n" +
+    "<!-- Source: " + escapeHtml(sourceName) + " -->\n" +
+    "<!-- Generated: " + escapeHtml(generatedAtIso) + " -->\n" +
+    "<!-- Records: " + records.length + " -->\n" +
+    '<!-- Paste these articles inside <div id="clearing-course-source" hidden> on the Clearing page. -->\n\n';
+  return header + records.map(renderCmsSourceArticle).join("\n\n") + "\n";
+}
+
+/* ---- date / now helpers ---------------------------------------------- */
+function londonToday() {
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" });
+  const [y, m, d] = fmt.format(new Date()).split("-").map(Number);
+  return ordFromMs(Date.UTC(y, m - 1, d));
+}
+function londonNowIso() {
+  const d = new Date();
+  const fmt = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false,
+  });
+  const p = {};
+  for (const part of fmt.formatToParts(d)) p[part.type] = part.value;
+  // offset
+  const asUTC = Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second);
+  const offMin = Math.round((asUTC - d.getTime()) / 60000);
+  const sign = offMin >= 0 ? "+" : "-";
+  const ah = String(Math.floor(Math.abs(offMin) / 60)).padStart(2, "0");
+  const am = String(Math.abs(offMin) % 60).padStart(2, "0");
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}${sign}${ah}:${am}`;
+}
+
+/* =======================================================================
+   UI WIRING  (browser only)
+   ======================================================================= */
+if (typeof document !== "undefined") {
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), fileInput = $("file"), processBtn = $("process"), resetBtn = $("reset");
+  const filenameEl = $("filename"), results = $("results"), banner = $("banner");
+  const summary = $("summary"), issuesEl = $("issues"), outputCard = $("outputCard");
+  const output = $("output"), copyBtn = $("copy"), copied = $("copied");
+  let currentFile = null;
+
+  function setFile(f) {
+    currentFile = f || null;
+    if (currentFile) {
+      filenameEl.innerHTML = "Selected: <strong>" + escapeHtml(currentFile.name) + "</strong>";
+      processBtn.disabled = false;
+    } else {
+      filenameEl.textContent = "";
+      processBtn.disabled = true;
+    }
+  }
+
+  fileInput.addEventListener("change", () => setFile(fileInput.files[0]));
+  ["dragenter", "dragover"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove("drag"); }));
+  drop.addEventListener("drop", (e) => {
+    const f = e.dataTransfer && e.dataTransfer.files[0];
+    if (f) { fileInput.files = e.dataTransfer.files; setFile(f); }
+  });
+
+  resetBtn.addEventListener("click", () => {
+    fileInput.value = ""; setFile(null);
+    results.classList.add("hidden"); outputCard.classList.add("hidden"); resetBtn.classList.add("hidden");
+    issuesEl.innerHTML = ""; summary.innerHTML = ""; banner.innerHTML = ""; output.value = "";
+  });
+
+  copyBtn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(output.value); }
+    catch (e) { output.focus(); output.select(); document.execCommand("copy"); }
+    copied.classList.remove("hidden");
+    setTimeout(() => copied.classList.add("hidden"), 2500);
+  });
+
+  function locText(issue) {
+    let loc = "";
+    if (issue.row) loc += "row " + issue.row;
+    if (issue.column) loc += (loc ? ", " : "") + issue.column;
+    return loc || "workbook";
+  }
+
+  function renderResult(result, sourceName) {
+    const errs = result.issues.filter((i) => i.severity === "error");
+    const warns = result.issues.filter((i) => i.severity === "warning");
+    const ok = errs.length === 0;
+
+    banner.className = "banner " + (ok ? "pass" : "fail");
+    banner.innerHTML = ok
+      ? "Validation passed — " + result.records.length + " records ready to publish" +
+        '<span class="sub">' + warns.length + " warning(s) to review before pasting.</span>"
+      : "Validation failed — " + errs.length + " error(s) must be fixed" +
+        '<span class="sub">No HTML is produced until every error is resolved.</span>';
+
+    const counts = {};
+    for (const r of result.records) counts[r.status] = (counts[r.status] || 0) + 1;
+    summary.innerHTML =
+      row("Source", escapeHtml(sourceName)) +
+      row("Source rows", result.sourceRows) +
+      row("Published records", result.records.length) +
+      row("Suppressed (Display = No)", result.suppressed) +
+      row("Errors", errs.length) +
+      row("Warnings", warns.length);
+
+    const ordered = errs.concat(warns);
+    issuesEl.innerHTML = ordered.map((i) =>
+      '<li><span class="tag ' + i.severity + '">' + i.severity.toUpperCase() + "</span>" +
+      '<span class="loc">' + escapeHtml(locText(i)) + ":</span> " + escapeHtml(i.message) + "</li>"
+    ).join("");
+
+    results.classList.remove("hidden");
+    resetBtn.classList.remove("hidden");
+
+    if (ok) {
+      output.value = renderCmsSourceHtml(result.records, sourceName, londonNowIso());
+      outputCard.classList.remove("hidden");
+    } else {
+      outputCard.classList.add("hidden");
+      output.value = "";
+    }
+  }
+  function row(k, v) { return "<dt>" + k + "</dt><dd>" + v + "</dd>"; }
+
+  async function run() {
+    if (!currentFile) return;
+    processBtn.disabled = true;
+    const original = processBtn.textContent;
+    processBtn.textContent = "Processing…";
+    try {
+      const buf = await currentFile.arrayBuffer();
+      const { headers, rows } = await readCoursesSheet(buf);
+      const result = validate(headers, rows, londonToday());
+      renderResult(result, currentFile.name);
+    } catch (err) {
+      banner.className = "banner fail";
+      banner.innerHTML = "Could not read the workbook" +
+        '<span class="sub">' + escapeHtml(err && err.message ? err.message : String(err)) + "</span>";
+      summary.innerHTML = ""; issuesEl.innerHTML = "";
+      results.classList.remove("hidden"); resetBtn.classList.remove("hidden");
+      outputCard.classList.add("hidden");
+    } finally {
+      processBtn.textContent = original;
+      processBtn.disabled = false;
+    }
+  }
+  processBtn.addEventListener("click", run);
+}
+
+/* ---- test export (node parity harness) ------------------------------- */
+if (typeof module !== "undefined" && module.exports) {
+  module.exports = {
+    readCoursesSheet, validate, renderCmsSourceHtml, renderCmsSourceArticle,
+    escapeHtml, excelDate, publicUrl, ordFromMs, cleanText, BuildError,
+  };
+}
+</script>
+</body>
+</html>

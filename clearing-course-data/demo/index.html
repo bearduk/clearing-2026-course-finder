@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Proof of concept for a searchable Keele Clearing course list.">
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="googlebot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="bingbot" content="noindex, nofollow, noarchive, nosnippet, noimageindex">
+  <meta name="referrer" content="no-referrer">
+  <title>Clearing courses 2026 | Proof of concept</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#course-results">Skip to course results</a>
+
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand" href="https://www.keele.ac.uk/" aria-label="Keele University home">
+        <span class="brand-mark" aria-hidden="true">K</span>
+        <span>KEELE<small>UNIVERSITY</small></span>
+      </a>
+      <span class="prototype-label">Prototype</span>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero-grid">
+        <div>
+          <p class="eyebrow">Clearing 2026</p>
+          <h1>Find your place at Keele</h1>
+          <p class="hero-copy">Explore undergraduate and foundation year courses through Clearing. Search by course name or browse one combined list from A to Z.</p>
+          <p class="hero-modified">
+            <span>Prototype for review. Please send feedback to Chris Beard.</span>
+            <span>Page last modified: <time datetime="2026-06-22">22 June 2026</time></span>
+          </p>
+        </div>
+        <aside class="hero-note" aria-label="Clearing support">
+          <span class="note-icon" aria-hidden="true">i</span>
+          <div>
+            <strong>Not sure if you meet the requirements?</strong>
+            <p>Entry requirements are a guide. Call our Clearing team to discuss your qualifications.</p>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="finder shell" aria-labelledby="finder-title">
+      <div class="finder-heading">
+        <div>
+          <p class="eyebrow dark">Course finder</p>
+          <h2 id="finder-title">Clearing courses and availability</h2>
+        </div>
+        <p class="demo-warning"><strong>Prototype:</strong> Course data is based on the supplied Clearing 2026 working document and remains subject to approval.</p>
+      </div>
+
+      <div class="controls" role="search">
+        <div class="search-field">
+          <label for="course-search">Search courses</label>
+          <div class="input-wrap">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z"/></svg>
+            <input id="course-search" type="search" placeholder="Try ‘psychology’, ‘business’ or ‘40 points’" autocomplete="off">
+            <button class="clear-search" type="button" aria-label="Clear search" hidden>Clear</button>
+          </div>
+        </div>
+
+        <fieldset class="course-type">
+          <legend>Course type</legend>
+          <div class="segmented">
+            <input type="radio" name="type" id="type-all" value="all" checked>
+            <label for="type-all">All</label>
+            <input type="radio" name="type" id="type-ug" value="Undergraduate">
+            <label for="type-ug">Undergraduate</label>
+            <input type="radio" name="type" id="type-fy" value="Foundation year">
+            <label for="type-fy">Foundation year</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="course-type availability-filter">
+          <legend>Availability</legend>
+          <select id="availability-select" name="availability">
+            <option value="vacancies" selected>Vacancies</option>
+            <option value="limited">Limited vacancies</option>
+            <option value="waiting">Waiting list</option>
+            <option value="full">Full</option>
+            <option value="all">All statuses</option>
+          </select>
+        </fieldset>
+      </div>
+
+      <nav class="az-nav" aria-label="Filter courses by first letter">
+        <span>Jump to</span>
+        <div id="az-buttons"></div>
+      </nav>
+
+      <div class="result-toolbar">
+        <p id="result-count" aria-live="polite"></p>
+        <div class="view-toggle" aria-label="Choose result view">
+          <button class="active" type="button" data-view="cards" aria-pressed="true">
+            <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M2 2h6v6H2V2Zm10 0h6v6h-6V2ZM2 12h6v6H2v-6Zm10 0h6v6h-6v-6Z"/></svg> Cards
+          </button>
+          <button type="button" data-view="table" aria-pressed="false">
+            <svg aria-hidden="true" viewBox="0 0 20 20"><path d="M2 3h16M2 10h16M2 17h16"/></svg> Table
+          </button>
+        </div>
+      </div>
+
+      <div id="table-columns" class="table-columns" hidden aria-hidden="true">
+        <span>Course</span>
+        <span>Typical offer</span>
+        <span>Actions</span>
+      </div>
+      <div id="course-results" class="course-results" tabindex="-1"></div>
+      <button type="button" class="button secondary load-more" id="load-more" hidden>Show more courses</button>
+      <div id="no-results" class="no-results" hidden>
+        <span aria-hidden="true">?</span>
+        <h3>No courses found</h3>
+        <p>Try another search term or choose a different course type.</p>
+        <button type="button" class="button secondary" id="reset-filters">Reset filters</button>
+      </div>
+    </section>
+
+    <section class="next-step">
+      <div class="shell next-step-inner">
+        <div>
+          <p class="eyebrow">Your next step</p>
+          <h2>Found a course you love?</h2>
+          <p>Our friendly Clearing team can answer questions and guide you through your application.</p>
+        </div>
+        <a class="button light" href="https://www.keele.ac.uk/clearing/">Visit Keele Clearing <span aria-hidden="true">→</span></a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="shell">
+      <p><strong>Proof of concept</strong> for discussion. Not a live Keele Clearing service.</p>
+      <div class="footer-meta">
+        <p>Course details link to public Keele course pages.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="build/clearing-data/current/courses.js"></script>
+  <script src="fuse.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
